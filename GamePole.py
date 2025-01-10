@@ -24,36 +24,47 @@ class GamePole:
             Ship(1, tp=randint(1, 2)),
         ]
 
-        for ship in self._ships:
-            placed = False
-            ship._field = self # Для каждого колрабля задаем, что он работает с этим полем
+        # Счетчик попыток
+        cntTry = 0
+        # Пока у последнего корабля не заданы координаты пытаемся расставить кораблики
+        # Если произошло 200 попыток и кораблики не встали, выбрасываем ошибку
+        while self._ships[len(self._ships)- 1]._x is None or \
+                    self._ships[len(self._ships)- 1]._y is None:
+            cntTry += 1
+            for i in range(len(self._ships)):            
+                if not self.setShip(self._ships[i], self._ships[:i]):
+                    i = 0
+            if cntTry == 200:
+                raise Exception("Расставить корабли не получилось")
 
-            # Пытаемся расставить корабли.
-            while not placed or ship._x == None or ship._y == None:
-                ship._x = randint(0, self._size - 1)
-                ship._y = randint(0, self._size - 1)
+    # Функция расстановки кораблей на поле
+    def setShip(self, ship :Ship, otherShips) -> bool:
+        cntTry = 0
+        ship._field = self # Для каждого корабля задаем, что он работает с этим полем
+        
+        # Пытаемся расставить корабли.
+        while ship._x is None or ship._y is None:
+            ship._x = randint(0, self._size - 1)
+            ship._y = randint(0, self._size - 1)
 
-                # Если корабль, с заданными координатами не помещается, прерываем итеррацию цикла
-                if ship.is_out_pole(self._size):
+            # Если корабль, с заданными координатами не помещается, прерываем итерацию цикла
+            if ship.is_out_pole(self._size):
+                ship._x = None
+                ship._y = None
+                continue
+
+            # Проходим по списку всех кораблей
+            for otherShip in otherShips:
+                # Првоеряем не пересекаемся ли с другим кораблем
+                if ship.is_collide(otherShip): 
                     ship._x = None
                     ship._y = None
-                    continue
-
-                # Проходим по списку всех кораблей
-                for otherShip in self._ships:
-                    # Игнорируем сеюя, в этом списке
-                    if id(ship) == id(otherShip):
-                        continue
-                    # Если дошли до кораблей, которые еще не расставлены, то прерываемся
-                    if otherShip._x == None and otherShip._y == None:
-                        break
-                    # Првоеряем не пересекаемся ли с другим кораблем
-                    if ship.is_collide(otherShip):
-                        ship._x = None
-                        ship._y = None
-                        break
-                placed = True
-
+                    cntTry += 1                     
+                    break
+            if cntTry == 100:
+                return False
+        return True
+        
     def get_ships(self) -> list:
         return self._ships
     
